@@ -1,6 +1,3 @@
-var ip = "localhost";
-var port = 4067;
-
 loadLanguage();
 
 var audio = document.createElement("audio");
@@ -355,7 +352,7 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
     }
 
     audio.pause();
-    $(audio).attr("src", "http://" + ip + ":" + port + "/track/" + $(this).attr("data-md5"));
+    $(audio).attr("src", "http://" +location.host+ "/track/" + $(this).attr("data-md5"));
     $(this).add($('li[data-role="song"].active')).toggleClass("active");
     $('li[data-role="pause"] img').attr("src", "img/icons/pause.png").removeClass("paused");
 
