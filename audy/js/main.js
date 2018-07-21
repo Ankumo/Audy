@@ -216,7 +216,6 @@ $('li[data-role="upload"] img').click(function () {
                         audyAlert(lang[data]);
                         break;
                     default:
-                        console.log(data);
                         var json = JSON.parse(data);
                         isUploading = false;
 
