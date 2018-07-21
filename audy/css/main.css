@@ -1,0 +1,921 @@
+* {
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    font-family: 'Open Sans', sans-serif;
+}
+
+body {
+    background: linear-gradient(to bottom, #1260d5, #7b52cc, #b03fb8, #d4269c, #eb127a);
+}
+
+div.main.fade {
+    filter: blur(5px);
+}
+
+@media (max-width: 1024px) {
+    body {
+        overflow-x: scroll;
+    }
+
+    body::-webkit-scrollbar {
+        display: block;
+    }
+}
+
+@media (max-height: 768px) {
+    body {
+        overflow-y: scroll;
+    }
+
+    body::-webkit-scrollbar {
+        display: block;
+    }
+}
+
+div.controls {
+    position: absolute;
+    background: rgba(0,0,0, 0.8);
+    bottom: 0;
+    width: 100%;
+    min-width: 1024px;
+    height: 40px;
+    margin: auto;
+    border-top: 1px solid rgba(80, 78, 78, 0.6);
+    box-shadow: 0 0 10px black;
+    z-index: 99999;
+}
+
+div.controls ul {
+    list-style: none;
+    overflow: hidden;
+    margin: 0 auto;
+    text-align: center;
+    height: 40px;
+}
+
+div.controls ul li {
+    display: inline-block;
+    text-align: center;
+    height: 40px;
+    min-width: 40px;
+    position: relative;
+}
+
+div.controls ul li[data-role="current"],
+div.controls ul li[data-role="max"] {
+    min-width: 40px;
+    text-align: center;
+    width: 70px;
+    display: inline-grid;
+}
+
+div.controls ul li img {
+    width: 25px;
+    height: 25px;
+    margin: auto;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    cursor: pointer;
+    transition: filter 0.3s, -webkit-filter 0.3s;
+}
+
+div.controls ul li img:hover {
+    -webkit-filter: drop-shadow(0 0 3px white);
+    filter: drop-shadow(0 0 3px white);
+}
+
+div.controls ul li input[type="range"] {
+    height: 40px;
+    padding-bottom: 1px;
+}
+
+div.controls ul li div.seekbar-container {
+    height: 40px;
+    width: 300px;
+    padding: 0 10px 0 10px;
+}
+
+div.controls ul li div.seekbar-container div.seekbar,
+div.controls ul li div.seekbar-container div.seekbar div.seekbar-overlay,
+div.controls ul li div.seekbar-container div.seekbar div.seekbar-buffered{
+    height: 4px;
+    background: white;
+    border-radius: 20px;
+    width: 300px;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    margin: auto;   
+    cursor: pointer;
+}
+
+div.controls ul li div.seekbar-container div.seekbar div.seekbar-overlay {
+    width: 0;
+    z-index: 90;
+    background: #529DE1;
+    right: unset;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+div.controls ul li div.seekbar-container div.seekbar div.seekbar-buffered {
+    width: 0;
+    z-index: 80;
+    right: unset;
+    background: #eb127a;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+    opacity: 0.7;
+}
+
+div.controls ul li div.seekbar-container:hover div.seekbar div.seekbar-thumb {
+    opacity: 1;
+}
+
+div.controls ul li div.seekbar-container div.seekbar div.seekbar-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 20px;
+    background: #529DE1;
+    z-index: 99;
+    position: absolute;
+    top: -4px; left: -6px; bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    cursor: pointer;
+}
+
+div.controls ul li button{
+    height: 40px;
+    padding: 0 5px 0 5px;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    cursor: pointer;
+}
+
+div.controls ul li a{
+    text-align: center;
+    color: white;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    margin: auto;
+    color: white;
+    display: table;
+    padding-top: 1px;
+}
+
+input[type=range] {
+    height: 25px;
+    -webkit-appearance: none;
+    width: 70px;
+    background: transparent;
+    margin: 0 7px 0 5px;
+    transition: opacity 0.3s;
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 3px;
+    cursor: pointer;
+    animate: 0.2s;
+    box-shadow: 1px 1px 1px white;
+    background: white;
+    border-radius: 14px;
+    border: 0px solid #000000;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    box-shadow: 0px 0px 0px #000000;
+    border: 0px solid #000000;
+    height: 12px;
+    width: 12px;
+    border-radius: 12px;
+    background: #529DE1;
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -4px;
+}
+
+input[type=range]::-moz-range-track {
+    width: 100%;
+    height: 3px;
+    cursor: pointer;
+    animate: 0.2s;
+    box-shadow: 1px 1px 1px white;
+    background: white;
+    border-radius: 14px;
+    border: 0px solid #000000;
+}
+
+input[type=range]::-moz-range-thumb {
+    box-shadow: 0px 0px 0px #000000;
+    border: 0px solid #000000;
+    height: 12px;
+    width: 12px;
+    border-radius: 12px;
+    background: #529DE1;
+    cursor: pointer;
+}
+
+input[type=range]::-ms-track {
+    width: 100%;
+    height: 3px;
+    cursor: pointer;
+    animate: 0.2s;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+}
+
+input[type=range]::-ms-fill-lower {
+    background: white;
+    border: 0px solid #000000;
+    border-radius: 28px;
+    box-shadow: 1px 1px 1px white;
+}
+
+input[type=range]::-ms-fill-upper {
+    background: white;
+    border: 0px solid #000000;
+    border-radius: 28px;
+    box-shadow: 1px 1px 1px white;
+}
+
+input[type=range]::-ms-thumb {
+    margin-top: 1px;
+    box-shadow: 0px 0px 0px #000000;
+    border: 0px solid #000000;
+    height: 12px;
+    width: 12px;
+    border-radius: 12px;
+    background: #529DE1;
+    cursor: pointer;
+}
+
+input[type=range]:focus::-ms-fill-upper,
+input[type=range]:focus::-ms-fill-lower{
+    background: white;
+}
+
+input[type=range][disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+div.track-info-container {
+    width: 100%;
+    height: 100%;
+    z-index: -99;
+}
+
+div.track-info {
+    margin: auto;
+    height: 100%;
+}
+
+div.track-info div.track-title {
+    position: absolute;
+    margin: auto;
+    top: 20px;
+    left: 0; right: 0;
+    text-align: center;
+}
+
+div.track-info div.track-title a {
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 0 10px black;
+    font-size: 48px;
+    text-align: center;
+    width: 95%;
+    margin: auto;
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+div.track-info div.track-album {
+    width: 500px;
+    height: 500px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px black;
+    position: absolute;
+    background: #f5f5f5;
+    margin: auto;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+div.track-info div.track-album img {
+    width: 450px;
+    height: 450px;
+    padding: 25px;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+div.audy-alert {
+    position: absolute;
+    z-index: 9999;
+    top: 0; right: 0; left: 0; bottom: 0;
+    margin: auto;
+    width: 300px;
+    min-height: 100px;
+    max-height: 300px;
+    box-shadow: 0 0 10px black;
+    background: rgba(0,0,0,0.8);
+    border-radius: 10px;
+    border: 1px solid grey;
+    display: table;
+}
+
+div.audy-alert-wrapper {
+    position: relative;
+    padding: 10px;
+    width: 300px;
+    height: 100%;
+}
+
+div.audy-alert-wrapper a {
+    text-align: left;
+    font-size: 14px;
+    color: white;
+    text-shadow: 0 0 1.5px white;
+    padding: 5px;
+    margin: 5px;
+    width: 280px;
+    word-wrap: break-word;
+}
+
+div.audy-alert-wrapper button {
+    transition: border 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    padding: 7px;
+    text-align: center;
+    color: white;
+    background: rgba(0,0,0,0.8);
+    border-radius: 5px;
+    margin: 3px;
+    border: 1px solid transparent;
+    min-width: 50px;
+}
+
+div.audy-alert-wrapper div.audy-alert-buttons {
+    width: 100%;
+    text-align: right;
+}
+
+div.audy-alert-wrapper button:hover {
+    border: 1px solid white;
+    box-shadow: 0 0 5px black;
+}
+
+div.sidebar {
+    position: fixed;
+    right: -600px;
+    width: 500px;
+    top: 0;
+    background: white;
+    border-left: 1px solid grey;
+    box-shadow: 0 0 5px black;
+    z-index: 99;
+    height: calc(100vh - 40px);
+}
+
+div.sidebar-wrapper {
+    padding: 5px;  
+}
+
+div.sidebar div.songs {
+    overflow-y: scroll;
+    height: calc(100vh - 80px);
+}
+
+div.sidebar div.songs ul {
+    list-style: none;
+    width: 100%;
+    overflow: hidden;
+}
+
+div.sidebar div.songs ul li {
+    padding: 3px;
+    background: white;
+    margin: 5px 0 5px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: opacity 0.2s;
+}
+
+div.sidebar div.songs ul li.dragged {
+    opacity: 0.5;
+    position: absolute;
+    width: 95%;
+}
+
+div.sidebar div.songs ul li.dragged img.track-settings {
+    display: none;
+}
+
+div.sidebar div.songs ul li.active,
+div.sidebar div.songs ul li:hover {
+    background: #cccccc;
+}
+
+div.sidebar div.songs ul li div.song-title {
+    padding: 5px 5px 5px 7px;
+    color: black;
+    text-align: left;
+    float: left;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 85%;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    font-size: 15px;
+}
+
+div.sidebar div.songs ul li img {
+    width: 30px;
+    height: 30px;
+    float: left;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 0 3px black;
+}
+
+div.sidebar div.songs ul li img.track-settings {
+    float: right;
+    background: #999999;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+div.sidebar div.songs ul li:hover img.track-settings {
+    opacity: 1;
+}
+
+div.playlists {
+    height: 30px;
+}
+
+div.playlists h3 {
+    float: left;
+    font-size: 18px;
+    color: black;
+    text-shadow: 0 0 0.5px black;
+}
+
+div.playlists div.chosen-playlist {
+    margin: auto;
+    width: 95%;
+}
+
+div.playlists div.tracks-search {
+    float: right;
+    margin: 1px 3px 3px 3px;
+}
+
+div.playlists div.tracks-search input {
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 2px 4px 2px 4px;
+    transition: box-shadow 0.2s;
+    width: 150px;
+}
+
+div.playlists div.tracks-search input:hover,
+div.playlists div.tracks-search input:focus{
+    box-shadow: 0 0 5px black;
+    outline: none;
+}
+
+div.playlists div.chosen-playlist span {
+    position: relative;
+    font-size: 18px;
+    padding: 0 3px 0 3px; 
+    line-height: 23px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+div.playlists div.chosen-playlist span::after {
+    content: "\25bc";
+    padding-left: 3px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+div.playlists div.playlists-list {
+    position: relative;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+div.playlists div.playlists-list.active {
+    color: white;
+    background: #d4269c;
+}
+
+div.playlists div.playlists-list:hover span::after,
+div.playlists div.playlists-list.active span::after{
+    opacity: 1;
+}
+
+div.playlists div.playlists-list.active ul {
+    background: #d4269c;
+}
+
+div.playlists div.playlists-list ul {
+    list-style: none;
+    display: none;
+    position: absolute;
+    z-index: 99999;
+    width: 100%;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+div.playlists div.playlists-list ul li {
+    color: white;
+    padding: 3px;
+    border-radius: 5px;
+}
+
+div.playlists div.playlists-list ul li div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+div.playlists div.playlists-list ul li.active,
+div.playlists div.playlists-list ul li:hover {
+    background: #529DE1;
+}
+
+div.playlists div.playlists-list-wrapper {
+    float: left;
+    width: 175px;
+    margin-left: 5px;
+    cursor: pointer;
+    padding: 0 3px 0 3px;  
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+body::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar::-webkit-scrollbar{
+    width: 5px;
+    position: absolute;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+    background-color: darkgrey;
+    outline: 1px solid slategrey;
+    border-radius: 20px;
+}
+
+div.overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+div.overlay div.overlay-container {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    margin: auto;
+    width: 700px;
+    min-height: 100px;
+    height: fit-content; 
+    z-index: 999;
+    display: none;
+}
+
+div.overlay div.overlay-container div.overlay-container-wrapper {
+    border: 1px solid black;
+    background: rgba(0,0,0,0.7);
+    border-radius: 5px;
+    box-shadow: 0 0 10px black;
+}
+
+div.overlay div.overlay-container h3 {
+    color: white;
+    text-align: center;
+    width: 90%;
+    padding: 5px;
+    margin: auto;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    
+}
+
+ul.form-fields {
+    list-style: none;
+    overflow: hidden;
+    width: 100%;
+}
+
+ul.form-fields li {
+    padding: 5px;
+    min-height: 30px;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+ul.form-fields li.wide label {
+    width: 100%;
+    margin: 2px;
+    float: left;
+    font-size: 14px;
+}
+
+ul.form-fields li.wide input,
+ul.form-fields li.wide textarea,
+ul.form-fields li.wide select {
+    width: 100%;
+    float: left;
+    max-width: 100%;
+}
+
+ul.form-fields li.form-fields-footer {
+    text-align: right;
+    padding: 10px;
+    cursor: default;
+}
+
+ul.form-fields li input,
+ul.form-fields li textarea {
+    border-radius: 4px;
+    padding: 3px;
+    background: white;
+    color: black;
+    float: right;
+    max-width: 50%;
+    border: 1px solid black;
+    cursor: text;
+    resize: none;
+}
+
+ul.form-fields li input[type="checkbox"] {
+    cursor: pointer;
+}
+
+ul.form-fields li label {
+    float: left;
+    max-width: 50%;
+    color: white;
+    font-size: 19px;
+}
+
+ul.form-fields li input[type="text"],
+ul.form-fields li input[type="number"],
+ul.form-fields li input[type="password"],
+ul.form-fields li input[type="email"] {
+    cursor: text;
+}
+
+ul.form-fields li button {
+    padding: 5px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid transparent;
+    color: white;
+    box-shadow: 0 0 3px white;
+    border-radius: 4px;
+    transition: border 0.2s;
+    cursor: pointer;
+}
+
+ul.form-fields li button:focus {
+    outline: none;
+}
+
+ul.form-fields li button:hover {
+    border: 1px solid white;
+}
+
+ul.form-fields li button.red {
+    color: red;
+    box-shadow: 0 0 3px red;
+}
+
+ul.form-fields li button.green {
+    color: greenyellow;
+    box-shadow: 0 0 3px greenyellow;
+}
+
+ul.form-fields li select {
+    float: right;
+    max-width: 50%;
+    border-radius: 4px;
+    padding: 3px;
+    background: white;
+    color: black;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+ul.form-fields li:not(.form-fields-footer):hover,
+div.playlist-control-songs ul li.active {
+    background: #999999;
+}
+
+ul.form-fields li input[type="checkbox"] {
+    width: 25px;
+    height: 25px;
+    padding: 2px;
+    transition: box-shadow 0.2s;
+}
+
+ul.form-fields li input[type="checkbox"]:checked {
+    box-shadow: 0 0 3px white;
+}
+
+div.upload-progress {
+    min-width: 100px;
+    max-width: 300px;
+    background: rgba(0,0,0,0.7);
+    padding: 5px;
+    position: absolute;
+    bottom: 40px; left: 0;
+    margin: 10px;
+}
+
+div.upload-progress progress {
+    width: 100%;
+    border: 1px solid black;
+    background: white;
+    padding: 3px;
+    border-radius: 4px;
+}
+
+div.upload-progress progress::-webkit-progress-bar {
+    background: white;
+}
+
+div.upload-progress progress::-webkit-progress-value {
+    background: black;
+}
+
+div.upload-progress h4 {
+    width: 100%;
+    color: white;
+    font-size: 12px;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 3px;
+}
+
+div.search-fallback {
+    text-shadow: 1px 1px 0.3px rgba(0,0,0,0.5);
+    text-align: center;
+    display: none;
+    padding: 5px;
+}
+
+.downlighted {
+    border-bottom: 1px dashed black;
+}
+
+@keyframes rope {
+    0% {padding-right: 0;}
+    50% {padding-right: 5px;}
+    100% {padding-right: 0;}
+}
+
+li[data-role="toggle"] img {
+    animation: rope .5s;
+    animation-iteration-count: infinite;
+}
+
+div.overlay-container.playlist-control,
+div.file-manager.overlay-container{
+    width: 50% !important;
+}
+
+div.playlist-control-toggle {
+    float: left;
+    display: none;
+}
+
+div.playlist-control-toggle img {
+    width: 25px;
+    height: 25px;
+    filter: invert(100%);
+    cursor: pointer;
+    transition: filter 0.3s;
+}
+
+div.playlist-control-toggle img:hover {
+    filter: invert(100%) drop-shadow(0 0 2px black);
+}
+
+div.playlist-control-songs {
+    max-height: 400px;
+    overflow-y: scroll;
+    width: 100%;
+    background: rgba(0,0,0,0.5);
+    border-radius: 5px;
+}
+
+div.playlist-control-songs ul {
+    list-style: none;
+    padding: 5px;
+}
+
+div.playlist-control-songs ul li{
+    min-height: unset;
+}
+
+div.playlist-control-songs ul li div {
+    color: white;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    overflow: hidden;   
+    white-space: nowrap;
+    float: left;
+    width: calc(100% - 30px);
+}
+
+div.playlist-control-songs ul li input {
+    float: left;
+}
+
+div.playlist-control-songs ul li:hover {
+    background: #999999;
+}
+
+ul.form-fields li.nohover:hover {
+    background: none;
+    cursor: default;
+}
+
+div.file-manager li.with-files-buttons label {
+    max-width: unset;
+    width: unset;
+    padding: 3px 5px 3px 3px;
+}
+
+div.track-lyrics {
+    display: none;
+    cursor: pointer;
+    width: 450px;
+    height: 450px;
+    margin: 25px;
+    overflow-y: scroll;
+}
+
+div.track-lyrics p {
+    white-space: pre-wrap;
+}
+
+div.users-list table {
+    color: white;
+    border-radius: 4px;
+    border: 1px solid grey;
+    margin: auto;
+    width: 100%;
+    padding: 5px;
+    border-spacing: 0;
+}
+
+div.users-list table thead tr th {
+    text-align: left;
+}
+
+div.users-list table tr td,
+div.users-list table tr th{
+    padding: 4px;
+    border-bottom: 1px solid grey;
+}
+
+div.users-list table tr td select {
+    max-width: 250px !important;
+    border: 1px solid grey;
+    background: rgba(0,0,0,.5);
+    color: white;
+    cursor: pointer;
+}

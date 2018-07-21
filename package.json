@@ -1,0 +1,15 @@
+{
+  "name": "audy-server",
+  "version": "0.0.0",
+  "description": "AudyServer",
+  "main": "server.js",
+  "author": {
+    "name": "Ankumo"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.3",
+    "formidable": "^1.2.1",
+    "musicmetadata": "^2.0.5"
+  }
+}

@@ -1,0 +1,236 @@
+<html>
+    <head>
+        <title>Audy Player v0.1</title>
+        <meta charset="utf-8">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+        <link rel="stylesheet" href="css/main.css" />
+    </head>
+    <body>
+        <div style="display: none;" class="overlay">
+            <div class="overlay-container settings">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>
+                    <ul class="form-fields">
+                        <li>
+                            <label data-lang="settings_lang_change"></label>
+                            <select name="lang_change"></select>
+                        </li>
+                        <li>
+                            <label data-lang="settings_autoplay"></label>
+                            <input type="checkbox" name="autoplay" />
+                        </li>
+                        <li>
+                            <label data-lang="settings_title_trackname"></label>
+                            <input type="checkbox" name="title_trackname" />
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="red" name="chpwd"></button>
+                            <button name="save"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="overlay-container users-list">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>
+                    <ul class="form-fields">
+                        <li class="wide nohover">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th data-lang="login"></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="red" name="adduser"></button>
+                            <button name="cancel"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="overlay-container change-password">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>
+                    <ul class="form-fields">
+                        <li>
+                            <label data-lang="settings_old_pass"></label>
+                            <input type="password" name="old_pass" />
+                        </li>
+                        <li>
+                            <label data-lang="settings_new_pass"></label>
+                            <input type="password" name="new_pass" />
+                        </li>
+                        <li>
+                            <label data-lang="settings_new_pass_2"></label>
+                            <input type="password" name="new_pass_2" />
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="green" name="chpwd"></button>
+                            <button name="cancel"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="overlay-container add-user">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>
+                    <ul class="form-fields">
+                        <li>
+                            <label data-lang="login"></label>
+                            <input type="text" name="login" />
+                        </li>
+                        <li>
+                            <label data-lang="password"></label>
+                            <input type="password" name="password" />
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="green" name="add"></button>
+                            <button name="cancel"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="overlay-container playlist-control">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>
+                    <div class="playlist-control-table">
+                        <ul class="form-fields">
+                            <li class="wide">
+                                <label data-lang="playlist_edit_playlist_name"></label>
+                                <input type="text" name="playlist_name" />
+                            </li>
+                            <li class="wide nohover">
+                                <label data-lang="playlist_edit_songlist"></label>
+                                <div class="playlist-control-songs scrollbar">
+                                    <ul></ul>
+                                </div>
+                            </li>
+                            <li class="form-fields-footer">
+                                <button name="save"></button>
+                                <button class="red" name="delete"></button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="overlay-container track-edit">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>                   
+                    <ul class="form-fields">
+                        <li class="wide">
+                            <label data-lang="track_edit_track_name"></label>
+                            <input type="text" name="track_name" />
+                        </li>
+                        <li class="wide">
+                            <label data-lang="track_edit_lyrics"></label>
+                            <textarea name="track_lyrics" rows="15"></textarea>
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="red" name="delete"></button>
+                            <button class="green" name="save"></button>
+                            <button name="cancel"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="overlay-container file-manager">
+                <div class="overlay-container-wrapper scrollbar">
+                    <h3></h3>                   
+                    <ul class="form-fields">
+                        <li class="wide nohover">
+                            <label data-lang="file_manager_files"></label>
+                            <div class="playlist-control-songs file-manager-files scrollbar">
+                                <ul></ul>
+                            </div>
+                        </li>
+                        <li class="wide nohover with-files-buttons">
+                            <label data-lang="with_files"></label>
+                            <button class="red" name="delete"></button>
+                        </li>
+                        <li class="form-fields-footer">
+                            <button class="green" name="fastupload"></button>
+                            <button name="uncheckall"></button>
+                            <button name="checkall"></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="main">
+            <div class="track-info-container">
+                <div class="track-info">
+                    <div class="track-title">
+                        <a></a>
+                    </div>
+                    <div class="track-album">
+                        <img src="img/default_album.png" />
+                        <div class="track-lyrics scrollbar">
+                            <p></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <ul>
+                    <li data-role="prev"><img  src="img/icons/prev.png" /></li>
+                    <li data-role="pause"><img class="paused" src="img/icons/play.png" /></li>
+                    <li data-role="next"><img  src="img/icons/next.png" /></li>
+                    <li data-role="current"><a>0:00</a></li>
+                    <li data-role="seekbar">
+                        <div class="seekbar-container">
+                            <div class="seekbar" data-max>
+                                <div class="seekbar-thumb"></div>
+                                <div class="seekbar-overlay"></div>
+                                <div class="seekbar-buffered"></div>
+                            </div>
+                        </div>
+                    </li>
+                    <li data-role="max"><a>0:00</a></li>
+                    <li data-role="mute"><img src="img/icons/volume_on.png" /></li>
+                    <li data-role="volbar"><input type="range" value="0" min="0" max="100" step="1" /></li>
+                    <li data-role="playmode"><img src="img/icons/playmode_0.png" /></li>
+                    <li data-role="toggle" style="float: right;"><img src="img/icons/backward.png" /></li>
+                    <li data-role="upload"><img src="img/icons/upload.png" /></li>  
+                    <li data-role="file-manager"><img src="img/icons/files.png" /></li>
+                    <li data-role="users-list"><img src="img/icons/users.png" /></li>
+                    <li data-role="settings"><img src="img/icons/settings.png" /></li>
+                    <li data-role="logout"><img src="img/icons/exit.png" /></li>
+                </ul>
+            </div>
+            <div class="sidebar">
+                <div class="sidebar-wrapper">
+                    <div class="playlists">
+                        <div class="chosen-playlist">
+                            <h3></h3>
+                            <div class="playlists-list-wrapper">
+                                <div class="playlists-list">
+                                    <span></span>
+                                    <ul></ul>
+                                </div>
+                            </div>
+                            <div class="playlist-control-toggle">
+                                <img src="img/icons/settings.png" />
+                            </div>
+                            <div class="tracks-search">
+                                <input type="text" name="search" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="songs scrollbar">
+                        <ul class="all-songs"></ul>
+                        <ul style="display: none;" class="playlisted-songs"></ul>
+                        <div class="search-fallback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
+        <script type="text/javascript" src="js/function.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
+    </body>
+</html>

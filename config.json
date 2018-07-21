@@ -1,0 +1,14 @@
+{
+  "default_lang": "en",
+  "default_autoplay": false,
+  "default_title_trackname": true,
+  "session_time": "72",
+  "iplogging": true,
+  "login_tries_to_ban": 7,
+  "login_tries_ban_time": 30,
+  "low_user_upload_allowed": false,
+  "low_user_max_playlists": 10,
+  "low_user_edit_tracks_allowed": false,
+  "root_user": "root",
+  "app_port": 4067
+}
