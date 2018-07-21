@@ -153,6 +153,7 @@ $('li[data-role="upload"] img').click(function () {
                 case "audio/ogg":
                 case "audio/vorbis":
                 case "audio/x-ms-wma":
+                case "audio/wav":
                 case "audio/vnd.wave":
                     files.push($(this).get(0).files[i]);
                     break;
