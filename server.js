@@ -314,7 +314,7 @@ app.post("/upload", function (req, res) {
                     continue;
                 } else {
                     fs.mkdirSync("./music/" + hash);
-                    fs.copyFileSync(file.path, "./music/" + hash + "/song");
+                    fs.writeFileSync("./music/" + hash + "/song", fs.readFileSync(file.path));
 
                     let info = {};
                     info["name"] = file.name;
@@ -925,7 +925,7 @@ app.post("/fastupload", function (req, res) {
             if (hash != null && hash !== "") {
                 if (!fs.existsSync("./music/" + hash)) {
                     fs.mkdirSync("./music/" + hash);
-                    fs.copyFileSync(p, "./music/" + hash + "/song");
+                    fs.writeFileSync("./music/" + hash + "/song", fs.readFileSync(p));
 
                     let info = {};
                     info["name"] = path.basename(file, path.extname(file));
