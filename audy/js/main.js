@@ -935,12 +935,7 @@ $('div.playlist-control button[name="save"]').click(function () {
     var tracks = [];
 
     if (pl === "new") {
-        var playlistsCount = 0;
-        for(var i in playlists) {
-            playlistsCount++;
-        }
-        
-        if (config.max_playlists < playlistsCount) {
+        if (config.max_playlists < Object.keys(playlists).length) {
             audyAlert(lang["error_too_much_playlists"]);
             return;
         }

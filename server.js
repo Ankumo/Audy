@@ -6,6 +6,9 @@ var fs = require("fs");
 var path = require("path");
 var crypto = require("crypto");
 var formidable = require('formidable');
+createAndReaddirSync("./temp");
+createAndReaddirSync("./fastupload");
+
 var mm = require("musicmetadata");
 var cookieParser = require('cookie-parser');
 
@@ -96,8 +99,20 @@ function isRoot(user) {
     return user === config.root_user;
 }
 
+function createAndReaddirSync(path) {
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path);
+    } else {
+        if (!fs.statSync(path).isDirectory()) {
+            fs.mkdirSync(path);
+        }
+    }
+
+    return fs.readdirSync(path);
+}
+
 console.log("Loading music data...");
-var music = fs.readdirSync("./music");
+var music = createAndReaddirSync("./music");
 
 music.sort(function (a, b) {
     return fs.statSync("./music/" + a).mtime.getTime() -
@@ -117,6 +132,7 @@ music.forEach(file => {
 });
 console.log("Music data successfully loaded. Found " + Object.keys(lib).length + " tracks.");
 
+createAndReaddirSync("./playlists");
 for (let user in clientsDB) {
     playlists[user] = {};
 
@@ -784,12 +800,7 @@ app.post("/updateplaylist/:playlist", function (req, res) {
         var pl = req.params.playlist;
 
         if (pl === "new") {
-            let playlistsCount = 0;
-            for (let i in playlists[user]) {
-                playlistsCount++;
-            }
-
-            if (!isRoot(user) && config.low_user_max_playlists < playlistsCount) {
+            if (!isRoot(user) && config.low_user_max_playlists < Object.keys(playlists[user]).length) {
                 res.send("error_too_much_playlists");
                 return;
             }
