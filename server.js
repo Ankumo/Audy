@@ -6,6 +6,7 @@ var fs = require("fs");
 var path = require("path");
 var crypto = require("crypto");
 var formidable = require('formidable');
+
 createAndReaddirSync("./temp");
 createAndReaddirSync("./fastupload");
 
@@ -126,7 +127,8 @@ music.forEach(file => {
         let plInfo = require("./music/" + file + "/song.json");
         lib[file] = {
             name: plInfo.name,
-            lyrics: plInfo.lyrics
+            lyrics: plInfo.lyrics,
+            has_picture: plInfo.has_picture
         };
     }
 });
@@ -160,11 +162,19 @@ for (let user in clientsDB) {
         if (stat.isFile() && path.extname(file) === ".json") {
             var json = JSON.parse(fs.readFileSync("./playlists/"+user+"/" + file));
             if (json["name"] != undefined && json["songs"] != undefined) {
+                let removed = [];
                 for (let i in json.songs) {
                     if (lib[json.songs[i]] == undefined) {
-                        delete json.songs[i];
+                        removed.push(json.songs[i]);
                     }
                 } 
+
+                for (let i in removed) {
+                    let index = json.songs.indexOf(removed[i]);
+                    if (index >= 0) {
+                        json.songs.splice(index, 1);
+                    }
+                }
 
                 let pl = path.basename(file, ".json");
 
@@ -214,22 +224,23 @@ app.get("/track/:trackID", function (req, res) {
             let hIndex = rangeInfo.indexOf("bytes=");
             if (hIndex >= 0) {
                 let ranges = rangeInfo.substr(hIndex + 6).split("-");
-                bytesRange["from"] = parseInt(ranges[0]);
+                bytesRange.from = parseInt(ranges[0]);
 
                 if (ranges[1] && ranges[1].length) {
                     let to = parseInt(ranges[1]);
-                    bytesRange["to"] = to < 16 ? 16 : to;
+                    bytesRange.to = to < 16 ? 16 : to;
                 }
             }
         }
 
-        if (bytesRange["to"] == fileSize) {
-            bytesRange["to"]--;
+        if (bytesRange.to == fileSize) {
+            bytesRange.to--;
         }
 
         stream = fs.createReadStream(musicPath, {
-            start: bytesRange["from"],
-            end: bytesRange["to"]
+            start: bytesRange.from,
+            end: bytesRange.to,
+            bufferSize: 256
         });
 
         var close = function () {
@@ -320,6 +331,7 @@ app.post("/upload", function (req, res) {
                     info["name"] = file.name;
                     info["lyrics"] = "";
                     info["timestamp"] = Date.now();
+                    info["has_picture"] = false;
 
                     let songID3Stream = fs.createReadStream(file.path);
 
@@ -327,17 +339,15 @@ app.post("/upload", function (req, res) {
                         mm(songID3Stream, function (err, meta) {
                             if (!err) {
                                 if (meta.picture.length > 0) {
-                                    info["picture"] = meta.picture;
-                                } else {
-                                    info["picture"] = [];
+                                    fs.writeFileSync("./music/" + hash + "/picture", meta.picture[0].data);
+                                    info.has_picture = true;
                                 }
-                            } else {
-                                info["picture"] = [];
                             }
 
                             lib[hash] = {
-                                name: info["name"],
-                                lyrics: ""
+                                name: info.name,
+                                lyrics: "",
+                                has_picture: info.has_picture
                             };
 
                             for (let user in clientsDB) {
@@ -367,7 +377,8 @@ app.post("/upload", function (req, res) {
 
                 for (let user in clientsDB) {
                     savePlaylist("all", user);
-                }               
+                }        
+
             }).catch(function (error) {
                 for (var i in files) {
                     dirClear("./music/" + files[i].hash);
@@ -390,12 +401,13 @@ app.post("/upload", function (req, res) {
             for (let user in clientsDB) {
                 savePlaylist("all", user);
             }
+
             res.send(JSON.stringify(result));
         }
     });
 });
 
-app.post("/getimage", function (req, res) {
+app.post("/getimages", function (req, res) {
     let session_hash = req.cookies["session_hash"];
 
     if (!checkSession(session_hash, req.ip)) {
@@ -406,6 +418,8 @@ app.post("/getimage", function (req, res) {
     var form = new formidable.IncomingForm();
     form.encoding = 'utf-8';
 
+    var resultPromises = [];
+
     form.parse(req, function (err, fields) {
         if (err) {
             console.log(err);
@@ -414,7 +428,7 @@ app.post("/getimage", function (req, res) {
         }
 
         if (fields.tracks == undefined) {
-            res.send("{}");
+            res.send("[]");
             return;
         }
 
@@ -422,10 +436,34 @@ app.post("/getimage", function (req, res) {
         let result = {};
 
         tracks.forEach(track => {
-            result[track] = require("./music/" + track + "/song.json").picture;
+            result[track] = false;
+
+            if (fs.existsSync("./music/" + track + "/picture") && fs.statSync("./music/" + track + "/picture").isFile()) {
+                resultPromises.push(new Promise(function (resolve, reject) {
+                    fs.readFile("./music/" + track + "/picture", (err, data) => {
+                        if (err) {
+                            console.log(err);
+                            resolve();
+                            return;
+                        }
+
+                        result[track] = data;
+                        resolve();
+                    });
+                }));
+            }
         });
 
-        res.send(JSON.stringify(result));
+        if (resultPromises.length > 0) {
+            Promise.all(resultPromises).then(function () {
+                res.send(JSON.stringify(result));
+            }).catch(function (error) {
+                console.log(error);
+                res.send("error");
+            });
+        } else {
+            res.send(JSON.stringify(result));
+        }
     });
 });
 
@@ -920,7 +958,7 @@ app.post("/fastupload", function (req, res) {
     files.forEach(file => {
         let p = "./fastupload/" + file;
 
-        if (fs.statSync(p).isFile() && allowedExts.indexOf(path.extname(p)) >= 0) {
+        if (fs.statSync(p).isFile() && allowedExts.indexOf(path.extname(p).toLowerCase()) >= 0) {
             let hash = md5File(p);
             if (hash != null && hash !== "") {
                 if (!fs.existsSync("./music/" + hash)) {
@@ -931,6 +969,7 @@ app.post("/fastupload", function (req, res) {
                     info["name"] = path.basename(file, path.extname(file));
                     info["lyrics"] = "";
                     info["timestamp"] = Date.now();
+                    info["has_picture"] = false;
 
                     let songID3Stream = fs.createReadStream(p);
 
@@ -938,17 +977,15 @@ app.post("/fastupload", function (req, res) {
                         mm(songID3Stream, function (err, meta) {
                             if (!err) {
                                 if (meta.picture.length > 0) {
-                                    info["picture"] = meta.picture;
-                                } else {
-                                    info["picture"] = [];
+                                    fs.writeFileSync("./music/" + hash + "/picture", meta.picture[0].data);
+                                    info.has_picture = true;
                                 }
-                            } else {
-                                info["picture"] = [];
                             }
 
                             lib[hash] = {
-                                name: info["name"],
-                                lyrics: ""
+                                name: info.name,
+                                lyrics: "",
+                                has_picture: info.has_picture
                             };
 
                             for (let u in clientsDB) {
@@ -964,7 +1001,9 @@ app.post("/fastupload", function (req, res) {
                             resolve();
                         });
                     }));
-                } 
+                } else {
+                    fs.unlinkSync(p);
+                }
             }
         }
     });

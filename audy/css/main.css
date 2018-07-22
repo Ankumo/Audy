@@ -128,7 +128,8 @@ div.controls ul li div.seekbar-container div.seekbar div.seekbar-buffered {
     opacity: 0.7;
 }
 
-div.controls ul li div.seekbar-container:hover div.seekbar div.seekbar-thumb {
+div.controls ul li div.seekbar-container:hover div.seekbar div.seekbar-thumb,
+div.controls ul li div.seekbar-container div.seekbar.pushed div.seekbar-thumb {
     opacity: 1;
 }
 

@@ -8,6 +8,7 @@ audio.pause();
 
 var playMode = 0;
 var activePlaylist = "all";
+var activeTrack = "";
 var safeEnd = false;
 var safeCheck = false;
 
@@ -18,9 +19,13 @@ $(audio).on('loadedmetadata', function () {
     $('li[data-role="max"] a').html(parseTime(audio.duration));
     audio.play();
 }).on('timeupdate', function () {
-    setValue(audio.currentTime);
+    if (!$('div.seekbar').hasClass("pushed")) {
+        setValue(audio.currentTime);
+    }
+
     $('li[data-role="current"] a').html(parseTime(audio.currentTime));
 
+    //chrome is so weird... this bug is not fixed since forever
     if (Math.floor(audio.duration) == Math.floor(audio.currentTime)) {
         if (!safeCheck) {
             setTimeout(function () {
@@ -94,6 +99,8 @@ $('div.seekbar').on('click', function (e) {
     if (!audio.paused) {
         audio.play();
     }
+}).on('mousedown', function () {
+    $(this).addClass("pushed");
 });
 
 $('li[data-role="volbar"] input').on('input change', function () {
@@ -217,11 +224,10 @@ $('li[data-role="upload"] img').click(function () {
                         var json = JSON.parse(data);
                         isUploading = false;
 
-                        var timestamp = Date.now();
-                        cacheQueue[timestamp] = {};
-
                         var resultErrored = 0;
                         var resultExists = 0;
+
+                        var toCache = [];
                         for (var i in json) {
                             if (json[i].error != undefined) {
                                 switch (json[i].error) {
@@ -235,18 +241,20 @@ $('li[data-role="upload"] img').click(function () {
                                 continue;
                             }
 
-                            $('div.sidebar div.songs ul.all-songs').prepend(createSongBox(json[i].name, json[i].md5));
-                            if (json[i].picture.length > 0) {
-                                cacheQueue[timestamp][json[i]["md5"]] = json[i].picture;
+                            if (json[i].has_picture) {
+                                toCache.push(json[i].md5);
                             }
 
-                            lib[json[i]["md5"]] = {
-                                name: json[i]["name"],
-                                lyrics: json[i]["lyrics"]
+                            $('div.sidebar div.songs ul.all-songs').prepend(createSongBox(json[i].name, json[i].md5));
+
+                            lib[json[i].md5] = {
+                                name: json[i].name,
+                                lyrics: json[i].lyrics,
+                                has_picture: json[i].has_picture
                             };
                         }
 
-                        updateImages(timestamp);
+                        cacheImages(toCache);
                         var message = "";
                         if (resultErrored > 0) {
                             message += lang["error_n_songs_error"].format(resultErrored);
@@ -352,52 +360,8 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
         return;
     }
 
-    audio.pause();
-    $(audio).attr("src", "http://" +location.host+ "/track/" + $(this).attr("data-md5"));
-    $(this).add($('li[data-role="song"].active')).toggleClass("active");
-    $('li[data-role="pause"] img').attr("src", "img/icons/pause.png").removeClass("paused");
-
-    if ($('div.track-album div.track-lyrics:visible').length > 0) {
-        $('div.track-album div.track-lyrics').hide();
-        $('div.track-album img').show();
-    }
-
-    var lyrics = lib[$(this).attr("data-md5")].lyrics;
-    $('div.track-album div.track-lyrics p').html(lyrics === "" ? lang["no_lyrics"] : lib[$(this).attr("data-md5")].lyrics);
-
-    var src = $(this).find("img").attr("src");
-    if (src.indexOf("blob:") >= 0) {
-        $('div.track-info div.track-album img').animate({
-            opacity: 0
-        }, 100, function () {
-            $(this).attr("src", src).animate({
-                opacity: 1
-            }, 200);
-        });
-    } else {
-        if ($('div.track-info div.track-album img').attr("src").indexOf("blob:") >= 0) {
-            $('div.track-info div.track-album img').animate({
-                opacity: 0
-            }, 100, function () {
-                $(this).attr("src", "img/default_album.png").animate({
-                    opacity: 1
-                }, 200);
-            });
-        }
-    }
-
-    var title = $(this).attr("title");
-    $('div.track-info div.track-title a').animate({
-        opacity: 0
-    }, 100, function () {
-        if (config.title_trackname) {
-            document.title = title;
-        }
-
-        $(this).html(title).animate({
-            opacity: 1
-        }, 200);
-    });
+    playSong($(this).attr("data-md5"));
+    $(this).addClass("active");
 }).on('click', 'div.sidebar div.playlists-list ul li:not(.add-playlist)', function () {
     if ($(this).hasClass("active")) {
         return;
@@ -411,6 +375,7 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
 
     var pl = $(this).find("div").attr("data-key");
     activePlaylist = pl;
+    
     if (pl === "all") {
         $('div.playlist-control-toggle').fadeOut();
         $('div.songs ul.playlisted-songs').empty().fadeOut();
@@ -418,14 +383,29 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
         return;
     } else {
         $('div.playlist-control-toggle').fadeIn();
+        $('div.tracks-search input[name="search"]').val("").trigger("input");
     }
 
     $('div.songs ul.all-songs:visible').fadeOut(200, function () {
         $('div.songs ul.playlisted-songs').empty().fadeIn();
-        for (var i in playlists[pl].songs) {
+        loaded.playlisted = Math.floor(screen.height / 46) + 5;
+
+        if (loaded.playlisted > playlists[pl].songs.length) {
+            loaded.playlisted = playlists[pl].songs.length;
+        }
+
+        var toCache = [];
+        for (var i = 0; i < loaded.playlisted; i++) {
             var hash = playlists[pl].songs[i];
+
+            if (imagesCache[hash] == undefined && lib[hash].has_picture) {
+                toCache.push(hash);
+            }
+
             $('div.songs ul.playlisted-songs').append(createSongBox(lib[hash].name, hash, imagesCache[hash]));
         }
+
+        cacheImages(toCache);
     });
 }).on('click', function (e) {
     if ($.contains($('div.playlists-list').get(0), e.target)) {
@@ -459,22 +439,77 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
 
     $('div.playlist-control button[name="save"]').addClass("green").html(lang["button_add"]);
     $('div.playlist-control button[name="delete"]').removeClass("red").html(lang["button_cancel"]);
-});
-
-$('li[data-role="next"]').click(function () {
-    if ($('div.songs ul li').last().hasClass("active")) {
+}).on('mousemove', function (e) {
+    if (!$('div.seekbar').hasClass("pushed")) {
         return;
     }
 
-    $('div.songs ul li.active').next().click();
+    var offset = $('div.seekbar').offset();
+    if (e.clientX > offset.left + $('div.seekbar').width()) {
+        $('div.seekbar-thumb').css('left', $('div.seekbar').width() - 4);
+        $('div.seekbar-overlay').css('width', $('div.seekbar').width());
+    } else if (e.clientX < offset.left) {
+        $('div.seekbar-thumb').css('left', "-4px");
+        $('div.seekbar-overlay').css('width', "0");
+    } else {
+        $('div.seekbar-thumb').css('left', e.clientX - offset.left - 4);
+        $('div.seekbar-overlay').css('width', e.clientX - offset.left);
+    }
+}).on('mouseup', function (e) {
+    if ($('div.seekbar').hasClass("pushed")) {
+        var width = e.clientX - $('div.seekbar').offset().left;
+        var val;
+
+        if (width <= 0) {
+            val = 0;
+        } else if (width > $('div.seekbar').width()) {
+            val = $('div.seekbar').attr("data-max");
+        } else {
+            var precent = (e.clientX - $('div.seekbar').offset().left + 4) / ($('div.seekbar').width() / 100);
+            val = ($('div.seekbar').attr("data-max") / 100) * precent;
+        }
+
+        audio.currentTime = val;
+        if (!audio.paused) {
+            audio.play();
+        }
+
+        setValue(val);
+        $('div.seekbar').removeClass("pushed");
+    }
+});
+
+
+$('li[data-role="next"]').click(function () {
+    var index = playlists[activePlaylist].songs.indexOf(activeTrack);
+    if (index < 0 || index >= playlists[activePlaylist].songs.length) {
+        return;
+    }
+
+    var md5 = playlists[activePlaylist].songs[index + 1];
+    var nextElement = $('div.songs ul:visible li[data-md5="' + md5 + '"]');
+
+    if (nextElement.length > 0) {
+        $(nextElement).click();
+    } else {
+        playSong(md5);
+    }
 });
 
 $('li[data-role="prev"]').click(function () {
-    if ($('div.songs ul li').first().hasClass("active")) {
+    var index = playlists[activePlaylist].songs.indexOf(activeTrack);
+    if (index <= 0 || index > playlists[activePlaylist].songs.length) {
         return;
     }
 
-    $('div.songs ul li.active').prev().click();
+    var md5 = playlists[activePlaylist].songs[index - 1];
+    var prevElement = $('div.songs ul:visible li[data-md5="' + md5 + '"]');
+
+    if (prevElement.length > 0) {
+        $(prevElement).click();
+    } else {
+        playSong(md5);
+    }
 });
 
 $('div.playlists-list').click(function (e) {
@@ -495,6 +530,10 @@ $('div.playlists-list').click(function (e) {
 });
 
 var config = {};
+var loaded = {
+    all: 0,
+    playlisted: 0
+};
 
 $(document).ready(function () {
     $.ajax({
@@ -527,25 +566,26 @@ $(document).ready(function () {
 
             $('div.playlists-list ul').append($('<li class="add-playlist"><div>' + lang["add_playlist"] + '</div></li>'));
 
-            for (var i in playlists.all.songs) {
-                $('div.songs ul.all-songs').append(createSongBox(lib[playlists.all.songs[i]].name, playlists.all.songs[i]));
-            }
-
             //cache
-            var loaded = Math.floor($("div.songs ul.all-songs").height() / 46) + 5;
-
-            if (loaded > $('div.songs ul.all-songs li').length) {
-                loaded = $('div.songs ul.all-songs li').length;
-            }
+            loaded.all = Math.floor(screen.height / 46) + 5;
 
             var firstCache = [];
-            for (var i = 0; i < loaded; i++) {
-                var md5 = $($("div.songs ul.all-songs li")[i]).attr("data-md5");
-                firstCache.push(md5);
+            if (loaded.all > Object.keys(lib).length) {
+                loaded.all = Object.keys(lib).length;
+            }
+
+            for (var i = 0; i < loaded.all; i++) {
+                var md5 = playlists.all.songs[i];
+                if (lib[md5] != undefined && lib[md5].has_picture) {
+                    firstCache.push(md5);
+                }
+
+                $('div.songs ul.all-songs').append(createSongBox(lib[md5].name, md5));
             }
 
             cacheImages(firstCache);
 
+            //config setups
             if (config["autoplay"]) {
                 $('div.songs ul li').first().click();
             }
@@ -560,8 +600,8 @@ $(document).ready(function () {
                 $('li[data-role="file-manager"]').remove();
                 $('div.overlay-container.file-manager').remove();
             }
-            
-            if(!config.is_root) {
+
+            if (!config.is_root) {
                 $('div.overlay-container.add-user').remove();
                 $('div.overlay-container.users-list').remove();
                 $('li[data-role="users-list"]').remove();
@@ -608,6 +648,56 @@ $(document).ready(function () {
     }
 });
 
+$("div.songs").scroll(function () {
+    var top = $(this).scrollTop();
+
+    if (top >= $(this).find("ul:visible").height() - $(this).height()) {
+        var toCache = [];
+
+        if (activePlaylist === "all") {
+            if (loaded.all >= Object.keys(lib).length) {
+                return;
+            }
+
+            var currentLoaded = loaded.all;
+            loaded.all += 10;
+
+            if (loaded.all > Object.keys(lib).length) {
+                loaded.all = Object.keys(lib).length;
+            }
+
+            for (var i = currentLoaded; i < loaded.all; i++) {
+                if (imagesCache[playlists.all.songs[i]] == undefined && lib[playlists.all.songs[i]].has_picture) {
+                    toCache.push(playlists.all.songs[i]);
+                }
+
+                $('div.songs ul.all-songs').append(createSongBox(lib[playlists.all.songs[i]].name, playlists.all.songs[i], imagesCache[playlists.all.songs[i]]));
+            }
+        } else {
+            if (loaded.playlisted >= playlists[activePlaylist].songs.length) {
+                return;
+            }
+
+            var currentLoaded = loaded.playlisted;
+            loaded.playlisted += 10;
+
+            if (loaded.playlisted > playlists[activePlaylist].songs.length) {
+                loaded.playlisted = playlists[activePlaylist].songs.length;
+            }
+
+            for (var i = currentLoaded; i < loaded.playlisted; i++) {
+                if (imagesCache[playlists[activePlaylist].songs[i]] == undefined && lib[playlists[activePlaylist].songs[i]].has_picture) {
+                    toCache.push(playlists[activePlaylist].songs[i]);
+                }
+
+                $('div.songs ul.playlisted-songs').append(createSongBox(lib[playlists[activePlaylist].songs[i]].name, playlists[activePlaylist].songs[i], imagesCache[playlists[activePlaylist].songs[i]]));
+            }
+        }
+
+        cacheImages(toCache);
+    }
+});
+
 $('li[data-role="settings"] img').click(function () {
     $('div.overlay').fadeIn();
     $('div.overlay div.settings').fadeIn(100, function () {
@@ -650,13 +740,13 @@ $('div.settings button[name="save"]').click(function () {
 
                         if (newConfig.title_trackname) {
                             var active = $('div.songs ul:visible li.active');
-                            if(active.length > 0) {
+                            if (active.length > 0) {
                                 document.title = $(active).attr("title");
                             } else {
-                                document.title = "Audy Player v0.1";
+                                document.title = "Audy Player v0.1.1";
                             }
                         } else {
-                            document.title = "Audy Player v0.1";
+                            document.title = "Audy Player v0.1.1";
                         }
 
                         config = newConfig;
@@ -804,29 +894,60 @@ $('div.tracks-search input[name="search"]').on('input paste', function () {
     if (search === "") {
         $('div.songs div.search-fallback').hide();
         $('div.songs ul:visible li:hidden').show();
+        $('div.songs ul:visible li.temp').remove();
         return;
     }
 
     searchInterval = setInterval(function () {
         $('div.songs div.search-fallback').hide();
-        $('div.songs ul:visible li div.song-title').each(function () {
-            if ($(this).html().toLowerCase().indexOf(search) < 0) {
-                $(this).parent().hide();
-            } else {
-                if ($(this).parent().is(":hidden")) {
-                    $(this).parent().show();
+        $('div.songs ul:visible li.temp').remove();
+        
+        if(activePlaylist !== "all") {
+            $('div.playlists-list ul li div[data-key="all"]').parent().click();
+        }
+        
+        var toCache = [];
+        for (var i in playlists.all.songs) {
+            var md5 = playlists.all.songs[i];
+            var name = lib[md5].name;
+            
+            var elem = $('div.songs ul:visible li[data-md5="' + md5 + '"]');
+
+            if (elem.length > 0) {
+                if (name.toLowerCase().indexOf(search) < 0) {
+                    $(elem).hide();
+                } else {
+                    if ($(elem).is(":hidden")) {
+                        $(elem).show();
+                    }
                 }
+            } else {
+                if (name.toLowerCase().indexOf(search) >= 0) {
+                    $('div.songs ul.all-songs').append(createSongBox(name, md5, imagesCache[md5]).addClass("temp"));
+                    
+                    if(imagesCache[md5] == undefined && lib[md5].has_picture) {
+                        toCache.push(md5);
+                    }
+                } 
             }
-        });
+        }
+        
+        cacheImages(toCache);
 
         if ($('div.songs ul:visible li:visible').length <= 0) {
             $('div.songs div.search-fallback').show();
         }
+        
+        clearInterval(searchInterval);
     }, 500);
 });
 
 var dragInterval;
 $(document).on('mousedown', 'li[data-role="song"]', function (e) {
+    if ($('div.tracks-search input[name="search"]').val() !== "") {
+        return;
+    }
+
     var $this = this;
 
     clearInterval(dragInterval);
@@ -999,9 +1120,23 @@ $('div.playlist-control button[name="save"]').click(function () {
                     }
 
                     $('div.songs ul.playlisted-songs').empty();
-                    for (var i in json.songs) {
+                    loaded.playlisted = Math.floor(screen.height / 46) + 5;
+
+                    if (loaded.playlisted > json.songs.length) {
+                        loaded.playlisted = json.songs.length;
+                    }
+
+                    var toCache = [];
+                    for (var i = 0; i < loaded.playlisted; i++) {
+                        if (imagesCache[json.songs[i]] == undefined && lib[json.songs[i]].has_picture) {
+                            toCache.push(json.songs[i]);
+                        }
+
                         $('div.songs ul.playlisted-songs').append(createSongBox(lib[json.songs[i]].name, json.songs[i], imagesCache[json.songs[i]]));
                     }
+
+                    cacheImages(toCache);
+
                     audyAlert(lang["playlist_updated"].format(json.name));
                     break;
             }
@@ -1258,7 +1393,7 @@ $(document).on("change", "div.users-list table select", function () {
                             break;
                         case "success":
                             audyAlert(lang["user_removed"].format(user), true);
-                            
+
                             $(tr).remove();
                             recountTable($('div.users-list table'));
                             break;
@@ -1301,25 +1436,25 @@ $('button[name="adduser"]').click(function () {
     });
 });
 
-$('div.add-user button[name="add"]').click(function() {
-    if(!config.is_root) {
+$('div.add-user button[name="add"]').click(function () {
+    if (!config.is_root) {
         audyAlert(lang["error_not_allowed"]);
         return;
     }
-    
+
     var userData = {
         login: $('div.add-user input[name="login"]').val(),
         password: $('div.add-user input[name="password"]').val()
     };
-    
+
     $.ajax({
         url: "/adduser",
         type: "POST",
         data: {
             data: JSON.stringify(userData)
         },
-        success: function(data) {
-            switch(data) {
+        success: function (data) {
+            switch (data) {
                 case "error_not_allowed":
                 case "error_parsing_form":
                 case "error_wrong_data":
@@ -1330,13 +1465,13 @@ $('div.add-user button[name="add"]').click(function() {
                     break;
                 case "success":
                     audyAlert(lang["user_added"].format(userData.login));
-                    
-                    $('div.users-list table tbody').append($('<tr data-login="'+userData.login+'"><td></td><td>'+userData.login+'</td>\n\
+
+                    $('div.users-list table tbody').append($('<tr data-login="' + userData.login + '"><td></td><td>' + userData.login + '</td>\n\
                             <td><select><option data-lang="th_actions" value disabled selected>' + lang["th_actions"] + '</option>\n\
                                 <option data-lang="button_delete" value="delete">' + lang["button_delete"] + '</option>\n\
                                 <option data-lang="reset_password" value="reset_password">' + lang["reset_password"] + '</option></select></td></tr>'));
                     recountTable($('div.users-list table'));
-                    
+
                     $('div.add-user input').val("");
                     break;
                 default:
