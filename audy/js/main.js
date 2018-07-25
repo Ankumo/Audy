@@ -875,6 +875,10 @@ $('div.track-edit button[name="save"]').click(function () {
                         }
 
                         $('div.track-lyrics p').html(songInfo.lyrics === "" ? lang["no_lyrics"] : songInfo.lyrics);
+                        
+                        if(config.title_trackname) {
+                            document.title = songInfo.name;
+                        }
                         break;
                     default:
                         console.log(data);
