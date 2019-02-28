@@ -251,7 +251,9 @@ $('li[data-role="upload"] img').click(function () {
                             playlists.all.songs.splice(0, 0, json[i].md5);
                         }
                         
-                        var message = "";
+                        let message = "";
+                        let ff = json.length - resultErrored - resultExists;
+                        
                         if (resultErrored > 0) {
                             message += lang["error_n_songs_error"].format(resultErrored);
                         }
@@ -261,9 +263,10 @@ $('li[data-role="upload"] img').click(function () {
                         }
 
                         if (message !== "") {
-                            var ff = json.length - resultErrored - resultExists;
                             audyAlert(message + " " + lang["n_files_uploaded"].format(ff));
                         }
+                        
+                        loaded.all += ff;
                         break;
                 }
             }
@@ -635,8 +638,6 @@ $("div.songs").scroll(function () {
     var top = $(this).scrollTop();
 
     if (top >= $(this).find("ul:visible").height() - $(this).height()) {
-        var toCache = [];
-
         if (activePlaylist === "all") {
             if (loaded.all >= Object.keys(lib).length) {
                 return;
