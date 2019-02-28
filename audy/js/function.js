@@ -1,7 +1,7 @@
 var lang = {};
 var playlists = {};
-var imagesCache = {};
-var cacheQueue = {};
+//var imagesCache = {};
+//var cacheQueue = {};
 var lib = {};
 
 String.prototype.format = function () {
@@ -158,11 +158,11 @@ function audyConfirm(message, cb, allowBackdrop) {
     $('div.main').addClass("fade");
 }
 
-function createSongBox(title, hash, image) {
-    image = image == undefined ? "img/default_album.png" : image;
+function createSongBox(title, hash) {
+    let image = getSongImage(hash);
     return $('<li ' + (activeTrack === hash ? 'class="active"' : "") + ' data-role="song" data-md5="' + hash + '" title="' + title + '"><img class="album-image" src="' + image + '" />\n\
-                            <div class="song-title">' + title + '</div>' + (config["edit_tracks_allowed"] ? '<img class="track-settings" src="img/icons/settings.png" />\n\
-                            </li>' : ""));
+            <div class="song-title">' + title + '</div>' + (config["edit_tracks_allowed"] ? '<img class="track-settings" src="img/icons/settings.png" />\n\
+            </li>' : ""));
 }
 
 function loadLanguage() {
@@ -222,71 +222,6 @@ function findSong(md5) {
     };
 }
 
-function updateImages(timestamp) {
-    for (var i in cacheQueue[timestamp]) {
-        if (imagesCache[i] != undefined) {
-            continue;
-        }
-
-        var picture = cacheQueue[timestamp][i];
-        if (!picture) {
-            continue;
-        }
-
-        var data = new Uint8Array(picture.data);
-        var newSrc = window.URL.createObjectURL(new Blob([data], {
-            type: "image/jpeg"
-        }));
-        
-        imagesCache[i] = newSrc;
-
-        if (i === activeTrack) {
-            if ($('div.track-info div.track-album img').attr("src") === "img/default_album.png") {
-                $('div.track-info div.track-album img').animate({
-                    opacity: 0
-                }, 100, function () {
-                    $(this).attr("src", newSrc).animate({
-                        opacity: 1
-                    }, 200);
-                });
-            }
-        }
-
-        var li = findSong(i);
-        if (li.all.length > 0 || li.pl.length > 0) {
-            $(li.all).add(li.pl).find("img.album-image").attr("src", newSrc);
-        }
-    }
-
-    delete cacheQueue[timestamp];
-}
-
-function cacheImages(tracks) {
-    if(tracks.length <= 0) {
-        return;
-    }
-    
-    $.ajax({
-        url: "/getimages",
-        type: "POST",
-        data: {
-            tracks: JSON.stringify(tracks)
-        },
-        success: function (data) {
-            var json = JSON.parse(data);
-
-            var timestamp = Date.now();
-            cacheQueue[timestamp] = {};
-
-            for (var i in json) {
-                cacheQueue[timestamp][i] = json[i];
-            }
-
-            updateImages(timestamp);
-        }
-    });
-}
-
 function createUploadProgressBar(text) {
     return $('<div class="upload-progress"><h4>' + text + '</h4><progress value="0" max="100"></progress></div>');
 }
@@ -338,6 +273,14 @@ function recountTable(table) {
     });
 }
 
+function getSongImage(md5) {
+    if(lib[md5] == undefined || lib[md5] == null || !lib[md5].has_picture) {
+        return "img/default_album.png";
+    } else {
+        return "timg/"+md5;
+    }
+}
+
 function playSong(md5) {
     if (lib[md5] == undefined) {
         audyAlert(lang["error_unable_to_load_track"], true);
@@ -362,27 +305,16 @@ function playSong(md5) {
     }
 
     $('div.track-album div.track-lyrics p').html(lib[md5].lyrics === "" ? lang["no_lyrics"] : lib[md5].lyrics);
-    if (lib[md5].has_picture) {
-        if (imagesCache[md5] != undefined) {
-            $('div.track-info div.track-album img').animate({
-                opacity: 0
-            }, 100, function () {
-                $(this).attr("src", imagesCache[md5]).animate({
-                    opacity: 1
-                }, 200);
-            });
-        } else {
-            cacheImages([md5]);
-            if ($('div.track-info div.track-album img').attr("src") !== "img/default_album.png") {
-                $('div.track-info div.track-album img').animate({
-                    opacity: 0
-                }, 100, function () {
-                    $(this).attr("src", "img/default_album.png").animate({
-                        opacity: 1
-                    }, 200);
-                });
-            }
-        }
+
+    let image = getSongImage(md5);
+    if (image !== "img/default_album.png") {
+        $('div.track-info div.track-album img').animate({
+            opacity: 0
+        }, 100, function () {
+            $(this).attr("src", image).animate({
+                opacity: 1
+            }, 200);
+        });
     } else {
         if ($('div.track-info div.track-album img').attr("src") !== "img/default_album.png") {
             $('div.track-info div.track-album img').animate({
@@ -394,7 +326,7 @@ function playSong(md5) {
             });
         }
     }
-
+   
     var title = lib[md5].name;
     $('div.track-info div.track-title a').animate({
         opacity: 0

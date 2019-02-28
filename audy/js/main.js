@@ -227,7 +227,6 @@ $('li[data-role="upload"] img').click(function () {
                         var resultErrored = 0;
                         var resultExists = 0;
 
-                        var toCache = [];
                         for (var i in json) {
                             if (json[i].error != undefined) {
                                 switch (json[i].error) {
@@ -240,21 +239,18 @@ $('li[data-role="upload"] img').click(function () {
                                 }
                                 continue;
                             }
-
-                            if (json[i].has_picture) {
-                                toCache.push(json[i].md5);
-                            }
-
-                            $('div.sidebar div.songs ul.all-songs').prepend(createSongBox(json[i].name, json[i].md5));
-
+                            
                             lib[json[i].md5] = {
                                 name: json[i].name,
                                 lyrics: json[i].lyrics,
                                 has_picture: json[i].has_picture
                             };
-                        }
 
-                        cacheImages(toCache);
+                            $('div.sidebar div.songs ul.all-songs').prepend(createSongBox(json[i].name, json[i].md5));
+
+                            playlists.all.songs.splice(0, 0, json[i].md5);
+                        }
+                        
                         var message = "";
                         if (resultErrored > 0) {
                             message += lang["error_n_songs_error"].format(resultErrored);
@@ -394,18 +390,11 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
             loaded.playlisted = playlists[pl].songs.length;
         }
 
-        var toCache = [];
         for (var i = 0; i < loaded.playlisted; i++) {
             var hash = playlists[pl].songs[i];
 
-            if (imagesCache[hash] == undefined && lib[hash].has_picture) {
-                toCache.push(hash);
-            }
-
-            $('div.songs ul.playlisted-songs').append(createSongBox(lib[hash].name, hash, imagesCache[hash]));
+            $('div.songs ul.playlisted-songs').append(createSongBox(lib[hash].name, hash));
         }
-
-        cacheImages(toCache);
     });
 }).on('click', function (e) {
     if ($.contains($('div.playlists-list').get(0), e.target)) {
@@ -482,7 +471,7 @@ $(document).on('click', 'li[data-role="song"]', function (e) {
 
 $('li[data-role="next"]').click(function () {
     var index = playlists[activePlaylist].songs.indexOf(activeTrack);
-    if (index < 0 || index >= playlists[activePlaylist].songs.length) {
+    if (index < 0 || index+1 >= playlists[activePlaylist].songs.length) {
         return;
     }
 
@@ -569,21 +558,15 @@ $(document).ready(function () {
             //cache
             loaded.all = Math.floor(screen.height / 46) + 5;
 
-            var firstCache = [];
             if (loaded.all > Object.keys(lib).length) {
                 loaded.all = Object.keys(lib).length;
             }
 
             for (var i = 0; i < loaded.all; i++) {
                 var md5 = playlists.all.songs[i];
-                if (lib[md5] != undefined && lib[md5].has_picture) {
-                    firstCache.push(md5);
-                }
-
+                
                 $('div.songs ul.all-songs').append(createSongBox(lib[md5].name, md5));
             }
-
-            cacheImages(firstCache);
 
             //config setups
             if (config["autoplay"]) {
@@ -667,11 +650,7 @@ $("div.songs").scroll(function () {
             }
 
             for (var i = currentLoaded; i < loaded.all; i++) {
-                if (imagesCache[playlists.all.songs[i]] == undefined && lib[playlists.all.songs[i]].has_picture) {
-                    toCache.push(playlists.all.songs[i]);
-                }
-
-                $('div.songs ul.all-songs').append(createSongBox(lib[playlists.all.songs[i]].name, playlists.all.songs[i], imagesCache[playlists.all.songs[i]]));
+                $('div.songs ul.all-songs').append(createSongBox(lib[playlists.all.songs[i]].name, playlists.all.songs[i]));
             }
         } else {
             if (loaded.playlisted >= playlists[activePlaylist].songs.length) {
@@ -686,15 +665,9 @@ $("div.songs").scroll(function () {
             }
 
             for (var i = currentLoaded; i < loaded.playlisted; i++) {
-                if (imagesCache[playlists[activePlaylist].songs[i]] == undefined && lib[playlists[activePlaylist].songs[i]].has_picture) {
-                    toCache.push(playlists[activePlaylist].songs[i]);
-                }
-
-                $('div.songs ul.playlisted-songs').append(createSongBox(lib[playlists[activePlaylist].songs[i]].name, playlists[activePlaylist].songs[i], imagesCache[playlists[activePlaylist].songs[i]]));
+                $('div.songs ul.playlisted-songs').append(createSongBox(lib[playlists[activePlaylist].songs[i]].name, playlists[activePlaylist].songs[i]));
             }
         }
-
-        cacheImages(toCache);
     }
 });
 
@@ -818,20 +791,16 @@ $('div.track-edit button[name="save"]').click(function () {
 
     var editsChanged = false;
     var md5 = $('div.track-edit').attr("data-md5");
-
-    if ($('div.track-edit ul.form-fields li input[name="track_name"]').val() !== lib[md5].name) {
-        editsChanged = true;
-    }
-
-    if ($('div.track-edit ul.form-fields li textarea[name="track_lyrics"]').val() !== lib[md5].lyrics) {
-        editsChanged = true;
-    }
-
+    
     var songInfo = {
         lyrics: $('div.track-edit ul.form-fields li textarea[name="track_lyrics"]').val(),
         name: $('div.track-edit ul.form-fields li input[name="track_name"]').val()
     };
 
+    if (songInfo.name !== lib[md5].name || songInfo.lyrics !== lib[md5].lyrics) {
+        editsChanged = true;
+    }
+    
     if (editsChanged) {
         $.ajax({
             url: "/updatetrack/" + md5,
@@ -910,7 +879,6 @@ $('div.tracks-search input[name="search"]').on('input paste', function () {
             $('div.playlists-list ul li div[data-key="all"]').parent().click();
         }
         
-        var toCache = [];
         for (var i in playlists.all.songs) {
             var md5 = playlists.all.songs[i];
             var name = lib[md5].name;
@@ -927,17 +895,11 @@ $('div.tracks-search input[name="search"]').on('input paste', function () {
                 }
             } else {
                 if (name.toLowerCase().indexOf(search) >= 0) {
-                    $('div.songs ul.all-songs').append(createSongBox(name, md5, imagesCache[md5]).addClass("temp"));
-                    
-                    if(imagesCache[md5] == undefined && lib[md5].has_picture) {
-                        toCache.push(md5);
-                    }
+                    $('div.songs ul.all-songs').append(createSongBox(name, md5).addClass("temp"));
                 } 
             }
         }
         
-        cacheImages(toCache);
-
         if ($('div.songs ul:visible li:visible').length <= 0) {
             $('div.songs div.search-fallback').show();
         }
@@ -1130,16 +1092,9 @@ $('div.playlist-control button[name="save"]').click(function () {
                         loaded.playlisted = json.songs.length;
                     }
 
-                    var toCache = [];
                     for (var i = 0; i < loaded.playlisted; i++) {
-                        if (imagesCache[json.songs[i]] == undefined && lib[json.songs[i]].has_picture) {
-                            toCache.push(json.songs[i]);
-                        }
-
-                        $('div.songs ul.playlisted-songs').append(createSongBox(lib[json.songs[i]].name, json.songs[i], imagesCache[json.songs[i]]));
+                        $('div.songs ul.playlisted-songs').append(createSongBox(lib[json.songs[i]].name, json.songs[i]));
                     }
-
-                    cacheImages(toCache);
 
                     audyAlert(lang["playlist_updated"].format(json.name));
                     break;

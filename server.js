@@ -6,6 +6,7 @@ var fs = require("fs");
 var path = require("path");
 var crypto = require("crypto");
 var formidable = require('formidable');
+var jimp = require('jimp');
 
 createAndReaddirSync("./temp");
 createAndReaddirSync("./fastupload");
@@ -20,7 +21,7 @@ var port = config.app_port;
 
 fs.readdirSync("./lang").forEach(file => {
     if (path.extname(file) === ".json") {
-        langs[path.basename(file, ".json")] = require("./lang/"+file);
+        langs[path.basename(file, ".json")] = require("./lang/" + file);
     }
 });
 
@@ -37,11 +38,11 @@ function saveUsers() {
 var app = express();
 app.use(cookieParser());
 
-app.get("/", function(req, res, next) {
+app.get("/", function (req, res, next) {
     let session_hash = req.cookies["session_hash"];
 
     if (!checkSession(session_hash, req.ip)) {
-        res.sendFile(__dirname+"/audy/login.html");
+        res.sendFile(__dirname + "/audy/login.html");
         return;
     }
 
@@ -57,7 +58,7 @@ function savePlaylist(name, user) {
         return;
     }
 
-    fs.writeFileSync("./playlists/"+user+"/"+ name + ".json", JSON.stringify(playlists[user][name]), {
+    fs.writeFileSync("./playlists/" + user + "/" + name + ".json", JSON.stringify(playlists[user][name]), {
         encoding: "utf-8"
     });
 }
@@ -156,18 +157,18 @@ for (let user in clientsDB) {
         savePlaylist("all", user);
     }
 
-    fs.readdirSync("./playlists/"+user).forEach(file => {
-        var stat = fs.statSync("./playlists/"+user+"/" + file);
+    fs.readdirSync("./playlists/" + user).forEach(file => {
+        var stat = fs.statSync("./playlists/" + user + "/" + file);
 
         if (stat.isFile() && path.extname(file) === ".json") {
-            var json = JSON.parse(fs.readFileSync("./playlists/"+user+"/" + file));
+            var json = JSON.parse(fs.readFileSync("./playlists/" + user + "/" + file));
             if (json["name"] != undefined && json["songs"] != undefined) {
                 let removed = [];
                 for (let i in json.songs) {
                     if (lib[json.songs[i]] == undefined) {
                         removed.push(json.songs[i]);
                     }
-                } 
+                }
 
                 for (let i in removed) {
                     let index = json.songs.indexOf(removed[i]);
@@ -190,7 +191,7 @@ fs.readdirSync("./playlists").forEach(file => {
 
     if (stat.isDirectory()) {
         if (clientsDB[file] == undefined) {
-            dirClear("./playlists/"+file);
+            dirClear("./playlists/" + file);
         }
     }
 });
@@ -314,6 +315,7 @@ app.post("/upload", function (req, res) {
                 result.push({
                     error: "error_getting_hash"
                 });
+
                 fs.unlinkSync(file.path);
                 continue;
             } else {
@@ -321,47 +323,75 @@ app.post("/upload", function (req, res) {
                     result.push({
                         error: "error_song_already_exists"
                     });
+
                     fs.unlinkSync(file.path);
                     continue;
                 } else {
                     fs.mkdirSync("./music/" + hash);
                     fs.writeFileSync("./music/" + hash + "/song", fs.readFileSync(file.path));
 
-                    let info = {};
-                    info["name"] = file.name;
-                    info["lyrics"] = "";
-                    info["timestamp"] = Date.now();
-                    info["has_picture"] = false;
+                    let info = {
+                        name: file.name,
+                        lyrics: "",
+                        md5: hash,
+                        has_picture: false,
+                        timestamp: Date.now(),
+                        type: file.type
+                    };
 
                     let songID3Stream = fs.createReadStream(file.path);
 
                     resultPromises.push(new Promise(function (resolve, reject) {
                         mm(songID3Stream, function (err, meta) {
-                            if (!err) {
-                                if (meta.picture.length > 0) {
-                                    fs.writeFileSync("./music/" + hash + "/picture", meta.picture[0].data);
-                                    info.has_picture = true;
-                                }
-                            }
+                            songID3Stream.close();
 
                             lib[hash] = {
                                 name: info.name,
                                 lyrics: "",
-                                has_picture: info.has_picture
+                                has_picture: false
                             };
 
                             for (let user in clientsDB) {
                                 playlists[user].all.songs.splice(0, 0, hash);
                             }
-                            
+
+                            if (!err && meta.picture.length > 0) {
+                                let jimpError = false;
+
+                                jimp.read(meta.picture[0].data).then(image => {
+                                    let w = image.getWidth();
+                                    let h = image.getHeight();
+
+                                    if (w > 1024 && h > 1024) {
+                                        image.resize(1024, 1024).quality(80);
+                                    }
+
+                                    image.write("./music/" + hash + "/picture.jpg");
+                                    info.has_picture = lib[hash].has_picture = true;
+
+                                    fs.appendFileSync("./music/" + hash + "/song.json", JSON.stringify(info), {
+                                        encoding: "utf-8"
+                                    });
+
+                                    result.push(info);
+                                    resolve();
+
+                                    return image;
+                                }).catch(err => {
+                                    console.log("Error while compressing song " + hash + " image. [" + err + "]");
+                                    jimpError = true;
+                                });
+
+                                if (!jimpError) {
+                                    return;
+                                }
+                            }
+
                             fs.appendFileSync("./music/" + hash + "/song.json", JSON.stringify(info), {
                                 encoding: "utf-8"
                             });
 
-                            info["md5"] = hash;
                             result.push(info);
-
-                            songID3Stream.close();
                             resolve();
                         });
                     }));
@@ -377,8 +407,7 @@ app.post("/upload", function (req, res) {
 
                 for (let user in clientsDB) {
                     savePlaylist("all", user);
-                }        
-
+                }
             }).catch(function (error) {
                 for (var i in files) {
                     dirClear("./music/" + files[i].hash);
@@ -390,7 +419,7 @@ app.post("/upload", function (req, res) {
                             playlists[user].all.songs.splice(index, 1);
                         }
                     }
-                    
+
                     delete lib[files[i].hash];
                 }
 
@@ -407,7 +436,7 @@ app.post("/upload", function (req, res) {
     });
 });
 
-app.post("/getimages", function (req, res) {
+app.get("/timg/:track", function (req, res) {
     let session_hash = req.cookies["session_hash"];
 
     if (!checkSession(session_hash, req.ip)) {
@@ -415,61 +444,28 @@ app.post("/getimages", function (req, res) {
         return;
     }
 
-    var form = new formidable.IncomingForm();
-    form.encoding = 'utf-8';
+    let track = req.params.track;
 
-    var resultPromises = [];
+    if (lib[track] == undefined || lib[track] == null) {
+        res.send("error_no_track");
+        return;
+    }
 
-    form.parse(req, function (err, fields) {
-        if (err) {
-            console.log(err);
-            res.send("error_parsing_form");
-            return;
-        }
+    if (!lib[track].has_picture) {
+        res.send("error_no_picture");
+        return;
+    }
 
-        if (fields.tracks == undefined) {
-            res.send("[]");
-            return;
-        }
-
-        let tracks = JSON.parse(fields.tracks);
-        let result = {};
-
-        tracks.forEach(track => {
-            result[track] = false;
-
-            if (fs.existsSync("./music/" + track + "/picture") && fs.statSync("./music/" + track + "/picture").isFile()) {
-                resultPromises.push(new Promise(function (resolve, reject) {
-                    fs.readFile("./music/" + track + "/picture", (err, data) => {
-                        if (err) {
-                            console.log(err);
-                            resolve();
-                            return;
-                        }
-
-                        result[track] = data;
-                        resolve();
-                    });
-                }));
-            }
-        });
-
-        if (resultPromises.length > 0) {
-            Promise.all(resultPromises).then(function () {
-                res.send(JSON.stringify(result));
-            }).catch(function (error) {
-                console.log(error);
-                res.send("error");
-            });
-        } else {
-            res.send(JSON.stringify(result));
-        }
-    });
+    if (fs.existsSync("./music/" + track + "/picture.jpg") && fs.statSync("./music/" + track + "/picture.jpg").isFile()) {
+        res.sendFile(__dirname+"/music/" + track + "/picture.jpg");
+    } else {
+        res.send("error_no_picture");
+    }
 });
 
 app.post("/getjson/:file", function (req, res) {
     let session_hash = req.cookies["session_hash"];
-    
+
     if (!checkSession(session_hash, req.ip)) {
         if (req.params.file === "lang") {
             res.send(JSON.stringify(langs[config.default_lang]));
@@ -660,7 +656,7 @@ app.post("/removetrack/:trackID/active/:active", function (req, res) {
                     }
                 }
             }
-            
+
             delete lib[trackID];
 
             res.send("success");
@@ -800,7 +796,7 @@ app.post("/updatepos/:trackID/iatrack/:iatrack/playlist/:playlist", function (re
     let place = playlists[user][pl].songs.splice(index, 1)[0];
     indexIa = playlists[user][pl].songs.indexOf(iatrack);
 
-    playlists[user][pl].songs.splice(indexIa+1, 0, place);
+    playlists[user][pl].songs.splice(indexIa + 1, 0, place);
 
     savePlaylist(pl, user);
     res.send(JSON.stringify(playlists[user][pl].songs));
@@ -852,11 +848,11 @@ app.post("/updateplaylist/:playlist", function (req, res) {
 
             if (fields.name !== playlists[user][pl].name) {
                 delete playlists[user][pl];
-                fs.unlinkSync("./playlists/"+user+"/" + pl + ".json");
+                fs.unlinkSync("./playlists/" + user + "/" + pl + ".json");
 
                 pl = md5(fields.name);
             }
-        } 
+        }
 
         playlists[user][pl] = {
             name: fields.name,
@@ -874,7 +870,7 @@ app.post("/updateplaylist/:playlist", function (req, res) {
             songs: playlists[user][pl].songs,
             hash: pl
         }));
-    }); 
+    });
 });
 
 app.post("/removeplaylist/:playlist", function (req, res) {
@@ -892,13 +888,13 @@ app.post("/removeplaylist/:playlist", function (req, res) {
         return;
     }
 
-    if (!fs.existsSync("./playlists/"+user+ "/" + req.params.playlist + ".json") || playlists[user][req.params.playlist] == undefined) {
+    if (!fs.existsSync("./playlists/" + user + "/" + req.params.playlist + ".json") || playlists[user][req.params.playlist] == undefined) {
         res.send("error_playlist_not_found");
         return;
     }
 
     delete playlists[user][req.params.playlist];
-    fs.unlinkSync("./playlists/"+user+"/"+ + req.params.playlist+".json");
+    fs.unlinkSync("./playlists/" + user + "/" + req.params.playlist + ".json");
     res.send("success");
 });
 
@@ -944,43 +940,40 @@ app.post("/fastupload", function (req, res) {
         return;
     }
 
-    let allowedExts = [
-        ".mp3",
-        ".flac",
-        ".aac",
-        ".wav",
-        ".wma",
-        ".ogg"
-    ];
+    let allowedExts = {
+        ".mp3": "audio/mp3",
+        ".flac": "audio/x-flac",
+        ".aac": "audio/aac",
+        ".wav": "audio/wav",
+        ".wma": "audio/x-ms-wma",
+        ".ogg": "audio/ogg"
+    };
 
     var resultPromises = [];
 
     files.forEach(file => {
         let p = "./fastupload/" + file;
 
-        if (fs.statSync(p).isFile() && allowedExts.indexOf(path.extname(p).toLowerCase()) >= 0) {
+        if (fs.statSync(p).isFile() && Object.keys(allowedExts).indexOf(path.extname(p).toLowerCase()) >= 0) {
             let hash = md5File(p);
             if (hash != null && hash !== "") {
                 if (!fs.existsSync("./music/" + hash)) {
                     fs.mkdirSync("./music/" + hash);
                     fs.writeFileSync("./music/" + hash + "/song", fs.readFileSync(p));
 
-                    let info = {};
-                    info["name"] = path.basename(file, path.extname(file));
-                    info["lyrics"] = "";
-                    info["timestamp"] = Date.now();
-                    info["has_picture"] = false;
+                    let info = {
+                        name: path.basename(file, path.extname(file)),
+                        lyrics: "",
+                        has_picture: false,
+                        timestamp: Date.now(),
+                        type: allowedExts[path.extname(p)]
+                    };
 
                     let songID3Stream = fs.createReadStream(p);
 
                     resultPromises.push(new Promise(function (resolve, reject) {
                         mm(songID3Stream, function (err, meta) {
-                            if (!err) {
-                                if (meta.picture.length > 0) {
-                                    fs.writeFileSync("./music/" + hash + "/picture", meta.picture[0].data);
-                                    info.has_picture = true;
-                                }
-                            }
+                            songID3Stream.close();
 
                             lib[hash] = {
                                 name: info.name,
@@ -991,12 +984,43 @@ app.post("/fastupload", function (req, res) {
                             for (let u in clientsDB) {
                                 playlists[u].all.songs.splice(0, 0, hash);
                             }
-                            
+
+                            if (!err && meta.picture.length > 0) {
+                                let jimpError = false;
+
+                                jimp.read(meta.picture[0].data).then(image => {
+                                    let w = image.getWidth();
+                                    let h = image.getHeight();
+
+                                    if (w > 1024 && h > 1024) {
+                                        image.resize(1024, 1024).quality(80);
+                                    }
+
+                                    image.write("./music/" + hash + "/picture.jpg");
+                                    info.has_picture = lib[hash].has_picture = true;
+
+                                    fs.appendFileSync("./music/" + hash + "/song.json", JSON.stringify(info), {
+                                        encoding: "utf-8"
+                                    });
+
+                                    fs.unlinkSync(p);
+                                    resolve();
+
+                                    return image;
+                                }).catch(err => {
+                                    console.log("Error while compressing song " + hash + " image. [" + err + "]");
+                                    jimpError = true;
+                                });
+
+                                if (!jimpError) {
+                                    return;
+                                }
+                            }
+
                             fs.appendFileSync("./music/" + hash + "/song.json", JSON.stringify(info), {
                                 encoding: "utf-8"
                             });
-
-                            songID3Stream.close();
+                            
                             fs.unlinkSync(p);
                             resolve();
                         });
@@ -1013,13 +1037,13 @@ app.post("/fastupload", function (req, res) {
             for (let u in clientsDB) {
                 savePlaylist("all", u);
             }
-            res.send("success");          
+            res.send("success");
         }).catch(function (error) {
             console.log(error);
             for (let u in clientsDB) {
                 savePlaylist("all", u);
             }
-            
+
             res.send("error");
         });
     } else {
@@ -1260,10 +1284,10 @@ app.post("/adduser", function (req, res) {
         };
 
         clientsDB[data.login] = newUser;
-        
+
         saveUsers();
 
-        fs.mkdirSync("./playlists/"+data.login);
+        fs.mkdirSync("./playlists/" + data.login);
         playlists[data.login] = {};
         playlists[data.login].all = {
             name: langs[config.default_lang].default_playlist_name,
@@ -1275,7 +1299,7 @@ app.post("/adduser", function (req, res) {
         }
 
         savePlaylist("all", data.login);
-        
+
         res.send("success");
     });
 });
