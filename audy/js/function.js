@@ -1,7 +1,5 @@
 var lang = {};
 var playlists = {};
-//var imagesCache = {};
-//var cacheQueue = {};
 var lib = {};
 
 String.prototype.format = function () {
